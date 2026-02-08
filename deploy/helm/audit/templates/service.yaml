@@ -1,0 +1,15 @@
+# Audit Service Kubernetes service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-audit
+  labels:
+    app: audit
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
+      protocol: TCP
+  selector:
+    app: audit

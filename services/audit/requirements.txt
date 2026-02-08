@@ -1,0 +1,7 @@
+# [Task]: T005 — Audit Service dependencies
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+dapr==1.14.0
+dapr-ext-fastapi==1.14.0
+pydantic==2.10.4
+structlog==24.4.0

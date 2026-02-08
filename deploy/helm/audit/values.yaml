@@ -1,0 +1,24 @@
+# Audit Service Helm values
+replicaCount: 1
+
+image:
+  repository: todo-chatbot/audit
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8003
+
+dapr:
+  enabled: true
+  appId: audit
+  appPort: 8003
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

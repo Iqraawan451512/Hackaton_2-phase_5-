@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReminderEvent",
+  "description": "Event schema for the reminders Kafka topic. Published by Backend Service (via Dapr Jobs callback), consumed by Notification Service.",
+  "type": "object",
+  "required": ["notification_id", "reminder_id", "task_id", "user_id", "message", "channel", "scheduled_time", "timestamp"],
+  "properties": {
+    "notification_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique notification identifier"
+    },
+    "reminder_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Reference to the reminder that triggered this"
+    },
+    "task_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Reference to the task"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User to notify"
+    },
+    "message": {
+      "type": "string",
+      "description": "Notification message text"
+    },
+    "channel": {
+      "type": "string",
+      "enum": ["push", "email"],
+      "description": "Delivery channel"
+    },
+    "scheduled_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the reminder was scheduled to fire"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the event was published (ISO 8601)"
+    }
+  }
+}

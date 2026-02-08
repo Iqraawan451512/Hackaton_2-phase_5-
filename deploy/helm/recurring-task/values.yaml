@@ -1,0 +1,24 @@
+# Recurring Task Service Helm values
+replicaCount: 1
+
+image:
+  repository: todo-chatbot/recurring-task
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8002
+
+dapr:
+  enabled: true
+  appId: recurring-task
+  appPort: 8002
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

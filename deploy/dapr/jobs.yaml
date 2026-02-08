@@ -1,0 +1,12 @@
+# [Task]: T013 — Dapr Jobs component for scheduled reminders
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: dapr-jobs
+  namespace: default
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    - name: direction
+      value: "input"

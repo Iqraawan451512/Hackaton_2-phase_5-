@@ -1,0 +1,25 @@
+# [Task]: T009 — Redpanda Kafka cluster for Minikube (1 replica)
+#
+# Usage: helm install redpanda redpanda/redpanda -f values.yaml -n kafka --create-namespace
+#
+# Constitution constraint: max 1 replica for Minikube local dev
+
+statefulset:
+  replicas: 1
+
+resources:
+  cpu:
+    cores: 1
+  memory:
+    container:
+      max: 1Gi
+
+storage:
+  persistentVolume:
+    enabled: true
+    size: 2Gi
+
+# Topics created post-install via rpk:
+#   rpk topic create task-events --brokers localhost:9092
+#   rpk topic create reminders --brokers localhost:9092
+#   rpk topic create task-updates --brokers localhost:9092

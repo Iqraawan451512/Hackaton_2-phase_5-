@@ -1,0 +1,15 @@
+# Recurring Task Service Kubernetes service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-recurring-task
+  labels:
+    app: recurring-task
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
+      protocol: TCP
+  selector:
+    app: recurring-task

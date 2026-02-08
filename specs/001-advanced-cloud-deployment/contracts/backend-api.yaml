@@ -1,0 +1,327 @@
+openapi: "3.1.0"
+info:
+  title: Todo Chatbot Backend API
+  version: "1.0.0"
+  description: >
+    Backend Service API for Phase V Todo Chatbot.
+    All endpoints are accessed via Dapr Service Invocation.
+
+paths:
+  /api/tasks:
+    get:
+      summary: List tasks
+      description: >
+        List all tasks for the authenticated user. Supports
+        search, filter, and sort query parameters.
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Full-text search in title and description
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [high, medium, low]
+          description: Filter by priority level
+        - name: tag
+          in: query
+          schema:
+            type: string
+          description: Filter by tag name
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, completed]
+          description: Filter by task status
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [priority, due_date, created_at]
+          description: Sort field
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+          description: Sort direction
+      responses:
+        "200":
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      summary: Create a new task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCreate"
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/tasks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get a single task
+      responses:
+        "200":
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+    patch:
+      summary: Update a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Validation error
+        "404":
+          description: Task not found
+    delete:
+      summary: Delete a task
+      responses:
+        "204":
+          description: Task deleted
+        "404":
+          description: Task not found
+
+  /api/tasks/{id}/complete:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      summary: Mark task as complete
+      description: >
+        Marks the task as completed. If the task has a recurrence
+        pattern, the Recurring Task Service will create the next
+        instance.
+      responses:
+        "200":
+          description: Task completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+
+  /api/tasks/{id}/tags:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      summary: Update task tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  items:
+                    type: string
+                    maxLength: 50
+                  maxItems: 20
+              required:
+                - tags
+      responses:
+        "200":
+          description: Tags updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+
+  /api/jobs/trigger:
+    post:
+      summary: Dapr Jobs callback
+      description: >
+        Called by the Dapr Jobs API when a scheduled reminder
+        fires. Publishes a reminder event to the reminders topic.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                task_id:
+                  type: string
+                  format: uuid
+                reminder_id:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Reminder processed
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 2000
+        status:
+          type: string
+          enum: [pending, completed, deleted]
+        priority:
+          type: string
+          enum: [high, medium, low]
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        recurrence_pattern:
+          type: string
+          enum: [daily, weekly, monthly]
+          nullable: true
+        recurrence_parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - status
+        - created_by
+        - created_at
+        - updated_at
+
+    TaskCreate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          minLength: 1
+        description:
+          type: string
+          maxLength: 2000
+        priority:
+          type: string
+          enum: [high, medium, low]
+          default: medium
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 20
+          default: []
+        recurrence_pattern:
+          type: string
+          enum: [daily, weekly, monthly]
+          nullable: true
+      required:
+        - title
+
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          minLength: 1
+        description:
+          type: string
+          maxLength: 2000
+        priority:
+          type: string
+          enum: [high, medium, low]
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 20
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+        code:
+          type: string
+      required:
+        - detail

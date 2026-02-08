@@ -1,0 +1,107 @@
+# [Task]: T084 — GitHub Actions CI workflow
+name: CI — Build & Test
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Python Services ────────────────────────────────────────
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pip install pytest pytest-asyncio
+      - run: python -m pytest tests/ -v
+
+  notification-tests:
+    name: Notification Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/notification
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pip install pytest pytest-asyncio
+      - run: python -m pytest tests/ -v
+
+  recurring-task-tests:
+    name: Recurring Task Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/recurring-task
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pip install pytest pytest-asyncio
+      - run: python -m pytest tests/ -v
+
+  audit-tests:
+    name: Audit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/audit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pip install pytest pytest-asyncio
+      - run: python -m pytest tests/ -v
+
+  # ── Frontend ───────────────────────────────────────────────
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test -- --passWithNoTests
+
+  # ── Python Linting ─────────────────────────────────────────
+  lint:
+    name: Python Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff
+      - run: ruff check services/backend services/notification services/recurring-task services/audit
+
+  # ── Docker Build Verification ──────────────────────────────
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [backend, notification, recurring-task, audit, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t test-${{ matrix.service }} services/${{ matrix.service }}

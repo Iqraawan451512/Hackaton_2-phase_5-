@@ -1,0 +1,20 @@
+# [Task]: T011 — Dapr state store component (PostgreSQL / Neon DB)
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: default
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+    - name: connectionString
+      secretKeyRef:
+        name: db-credentials
+        key: connection-string
+    - name: actorStateStore
+      value: "false"
+    - name: tableName
+      value: "dapr_state"
+  auth:
+    secretStore: kubernetes-secrets

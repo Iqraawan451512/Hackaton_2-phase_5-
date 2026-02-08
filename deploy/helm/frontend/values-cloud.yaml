@@ -1,0 +1,26 @@
+# [Task]: T087 — Cloud deployment values for frontend
+
+# High availability configuration for cloud deployment
+replicaCount: 2
+
+image:
+  pullPolicy: Always
+
+# Increased resources for cloud environment
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+
+# Use LoadBalancer for cloud deployment instead of NodePort
+service:
+  type: LoadBalancer
+  port: 3000
+
+dapr:
+  enabled: true
+  appId: frontend
+  appPort: 3000

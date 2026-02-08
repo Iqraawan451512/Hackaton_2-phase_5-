@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TaskUpdateEvent",
+  "description": "Event schema for the task-updates Kafka topic. Published by Backend Service, consumed by WebSocket relay for real-time client sync.",
+  "type": "object",
+  "required": ["event_id", "action", "task_id", "task", "timestamp"],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique event identifier"
+    },
+    "action": {
+      "type": "string",
+      "enum": ["created", "updated", "completed", "deleted"],
+      "description": "What happened to the task"
+    },
+    "task_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "ID of the affected task"
+    },
+    "task": {
+      "type": ["object", "null"],
+      "description": "Current task state (null for deleted tasks)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the event occurred (ISO 8601)"
+    }
+  }
+}

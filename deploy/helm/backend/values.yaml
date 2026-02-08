@@ -1,0 +1,24 @@
+# [Task]: T077 — Backend Service Helm values
+replicaCount: 1
+
+image:
+  repository: todo-chatbot/backend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+dapr:
+  enabled: true
+  appId: backend
+  appPort: 8000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

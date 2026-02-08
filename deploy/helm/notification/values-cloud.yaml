@@ -1,0 +1,26 @@
+# [Task]: T087 — Cloud deployment values for notification
+
+# High availability configuration for cloud deployment
+replicaCount: 2
+
+image:
+  pullPolicy: Always
+
+# Increased resources for cloud environment
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+
+# Preserve service and Dapr configuration from defaults
+service:
+  type: ClusterIP
+  port: 8001
+
+dapr:
+  enabled: true
+  appId: notification
+  appPort: 8001

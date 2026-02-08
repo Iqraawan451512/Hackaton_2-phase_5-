@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TaskEvent",
+  "description": "Event schema for the task-events Kafka topic. Published by Backend Service, consumed by Audit Service and Recurring Task Service.",
+  "type": "object",
+  "required": ["event_id", "event_type", "task_id", "payload", "user_id", "timestamp"],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique event identifier"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": ["task.created", "task.updated", "task.completed", "task.deleted"],
+      "description": "Type of task lifecycle event"
+    },
+    "task_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "ID of the affected task"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-specific payload",
+      "oneOf": [
+        {
+          "title": "TaskCreatedPayload",
+          "properties": {
+            "task": {
+              "type": "object",
+              "description": "Full task object at creation time"
+            }
+          },
+          "required": ["task"]
+        },
+        {
+          "title": "TaskUpdatedPayload",
+          "properties": {
+            "task_id": { "type": "string", "format": "uuid" },
+            "changes": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "old": {},
+                  "new": {}
+                },
+                "required": ["old", "new"]
+              }
+            }
+          },
+          "required": ["task_id", "changes"]
+        },
+        {
+          "title": "TaskCompletedPayload",
+          "properties": {
+            "task_id": { "type": "string", "format": "uuid" },
+            "completed_at": { "type": "string", "format": "date-time" },
+            "recurrence_pattern": {
+              "type": ["string", "null"],
+              "enum": ["daily", "weekly", "monthly", null]
+            }
+          },
+          "required": ["task_id", "completed_at"]
+        },
+        {
+          "title": "TaskDeletedPayload",
+          "properties": {
+            "task_id": { "type": "string", "format": "uuid" },
+            "deleted_at": { "type": "string", "format": "date-time" }
+          },
+          "required": ["task_id", "deleted_at"]
+        }
+      ]
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User who triggered the event"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the event occurred (ISO 8601)"
+    }
+  }
+}
