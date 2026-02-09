@@ -4,16 +4,19 @@
 # Builds and serves the Next.js frontend. Connects to the backend HF Space
 # via NEXT_PUBLIC_API_URL environment variable.
 # HF Spaces expects port 7860 by default.
+#
+# NOTE: When pushing to HF Space, copy frontend files to the Space root.
+#       This Dockerfile expects package.json, src/, etc. at the build context root.
 # =============================================================================
 
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY services/frontend/package.json services/frontend/package-lock.json* ./
+COPY package.json package-lock.json* ./
 RUN npm ci
 
-COPY services/frontend/ .
+COPY . .
 
 # Build-time env: point to backend HF Space
 # Users must replace this with their actual backend Space URL
@@ -32,7 +35,6 @@ ENV NODE_ENV=production
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/public ./public 2>/dev/null || true
 
 EXPOSE 7860
 
