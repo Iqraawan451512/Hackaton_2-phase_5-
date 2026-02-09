@@ -1,0 +1,39 @@
+# =============================================================================
+# NOTIFICATION SERVICE — Production Values
+# =============================================================================
+# Consumes reminder events from Kafka (Dapr Pub/Sub) and dispatches
+# notifications. Listens on port 8001.
+# - 2 replicas for high availability and parallel event processing
+# - ClusterIP (internal only — receives events via Dapr sidecar)
+# - Moderate resources (event consumer, no heavy compute)
+# =============================================================================
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/iqraawan451512/todo-chatbot/notification
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 8001
+
+dapr:
+  enabled: true
+  appId: notification
+  appPort: 8001
+
+resources:
+  requests:
+    cpu: 150m
+    memory: 256Mi
+  limits:
+    cpu: 750m
+    memory: 512Mi
+
+env:
+  - name: APP_ENV
+    value: production
+  - name: LOG_LEVEL
+    value: info

@@ -1,0 +1,40 @@
+# =============================================================================
+# BACKEND SERVICE — Production Values
+# =============================================================================
+# FastAPI backend (port 8000). Core API service handling task CRUD, search,
+# filtering, and event publishing to Kafka via Dapr.
+# - 2 replicas for high availability
+# - ClusterIP (internal only — frontend proxies to it)
+# - Increased CPU/memory for production workloads
+# - Image always pulled to ensure latest deployed tag is used
+# =============================================================================
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/iqraawan451512/todo-chatbot/backend
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 8000
+
+dapr:
+  enabled: true
+  appId: backend
+  appPort: 8000
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+
+env:
+  - name: APP_ENV
+    value: production
+  - name: LOG_LEVEL
+    value: info

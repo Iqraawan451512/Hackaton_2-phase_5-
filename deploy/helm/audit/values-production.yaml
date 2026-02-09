@@ -1,0 +1,39 @@
+# =============================================================================
+# AUDIT SERVICE — Production Values
+# =============================================================================
+# Consumes task-events from Kafka and persists audit logs to the state store.
+# Listens on port 8003.
+# - 2 replicas for high availability of audit trail recording
+# - ClusterIP (internal only — receives events via Dapr sidecar)
+# - Moderate resources (event consumer + state store writes)
+# =============================================================================
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/iqraawan451512/todo-chatbot/audit
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 8003
+
+dapr:
+  enabled: true
+  appId: audit
+  appPort: 8003
+
+resources:
+  requests:
+    cpu: 150m
+    memory: 256Mi
+  limits:
+    cpu: 750m
+    memory: 512Mi
+
+env:
+  - name: APP_ENV
+    value: production
+  - name: LOG_LEVEL
+    value: info

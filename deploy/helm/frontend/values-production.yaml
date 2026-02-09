@@ -1,0 +1,39 @@
+# =============================================================================
+# FRONTEND SERVICE — Production Values
+# =============================================================================
+# Next.js 14 web UI served on port 3000. The only externally-accessible
+# service — exposed via LoadBalancer for cloud ingress.
+# - 2 replicas for high availability
+# - LoadBalancer type (public-facing, gets external IP from cloud provider)
+# - Higher resource limits (SSR rendering needs more memory)
+# =============================================================================
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/iqraawan451512/todo-chatbot/frontend
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: LoadBalancer
+  port: 3000
+
+dapr:
+  enabled: true
+  appId: frontend
+  appPort: 3000
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+
+env:
+  - name: NODE_ENV
+    value: production
+  - name: NEXT_PUBLIC_API_URL
+    value: http://backend-backend:8000

@@ -1,0 +1,39 @@
+# =============================================================================
+# RECURRING TASK SERVICE — Production Values
+# =============================================================================
+# Handles cron-based recurring task creation via Dapr Jobs binding.
+# Listens on port 8002.
+# - 2 replicas for failover (only one actively processes cron triggers)
+# - ClusterIP (internal only — triggered by Dapr scheduler)
+# - Moderate resources (lightweight scheduler consumer)
+# =============================================================================
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/iqraawan451512/todo-chatbot/recurring-task
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 8002
+
+dapr:
+  enabled: true
+  appId: recurring-task
+  appPort: 8002
+
+resources:
+  requests:
+    cpu: 150m
+    memory: 256Mi
+  limits:
+    cpu: 750m
+    memory: 512Mi
+
+env:
+  - name: APP_ENV
+    value: production
+  - name: LOG_LEVEL
+    value: info
