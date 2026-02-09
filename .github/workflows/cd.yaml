@@ -3,7 +3,7 @@ name: CD — Build, Push & Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 env:
   REGISTRY: ghcr.io
