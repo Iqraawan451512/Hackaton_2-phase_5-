@@ -1,45 +1,37 @@
 # =============================================================================
-# PRODUCTION DEPLOYMENT WORKFLOW
+# PRODUCTION BUILD WORKFLOW
 # =============================================================================
-# Triggers on push to master. Builds Docker images for all 5 microservices,
-# pushes them to GitHub Container Registry (GHCR), then deploys to a managed
-# Kubernetes cluster using Helm charts with production values.
+# Triggers on push to master. Builds Docker images for all 5 microservices
+# and pushes them to GitHub Container Registry (GHCR).
 #
-# Required GitHub Secrets:
-#   - KUBE_CONFIG: Base64-encoded kubeconfig for the target K8s cluster
-#
-# Required GitHub Environment:
-#   - "production" environment with optional approval rules
+# K8s deployment is handled separately when a cluster is available.
+# For Hugging Face Spaces deployment, see docs/huggingface-deployment-guide.md
 # =============================================================================
 
-name: Production Deploy
+name: Production Build
 
 on:
   push:
     branches: [master]
 
-# Cancel any in-progress deployment when a new push arrives
 concurrency:
-  group: production-deploy
-  cancel-in-progress: false  # Never cancel a running deploy
+  group: production-build
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ${{ github.repository_owner }}/todo-chatbot
-  NAMESPACE: todo-chatbot
 
-# Minimal permissions — only what's needed
 permissions:
   contents: read
   packages: write
 
 jobs:
-  # ─── Stage 1: Build & Push Docker Images (parallel matrix) ──────────
   build-and-push:
     name: "Build: ${{ matrix.service }}"
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: true    # Stop all builds if one fails
+      fail-fast: true
       matrix:
         service: [backend, notification, recurring-task, audit, frontend]
     steps:
@@ -78,116 +70,3 @@ jobs:
       - name: Log image pushed
         run: |
           echo "::notice::Pushed ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.sha }}"
-
-  # ─── Stage 2: Deploy to Kubernetes Cluster (sequential) ─────────────
-  # Skipped automatically if KUBE_CONFIG secret is not configured.
-  # Build & Push (Stage 1) still runs and pushes images to GHCR.
-  deploy:
-    name: Deploy to Production
-    needs: build-and-push
-    if: ${{ secrets.KUBE_CONFIG != '' }}
-    runs-on: ubuntu-latest
-    environment: production    # Requires GitHub "production" environment
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure kubectl
-        uses: azure/k8s-set-context@v4
-        with:
-          kubeconfig: ${{ secrets.KUBE_CONFIG }}
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: v3.14.0
-
-      - name: Create namespace (if not exists)
-        run: kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
-
-      - name: Apply Dapr components
-        run: |
-          echo "::group::Applying Dapr component manifests"
-          kubectl apply -f deploy/dapr/ -n ${{ env.NAMESPACE }}
-          echo "::endgroup::"
-
-      # --- Deploy each service with production Helm values ---
-      - name: Deploy Backend
-        run: |
-          echo "::group::Helm deploy backend"
-          helm upgrade --install backend deploy/helm/backend \
-            -n ${{ env.NAMESPACE }} \
-            -f deploy/helm/backend/values-production.yaml \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend \
-            --set image.tag=${{ github.sha }} \
-            --wait --timeout 5m \
-            --atomic
-          echo "::endgroup::"
-
-      - name: Deploy Notification
-        run: |
-          echo "::group::Helm deploy notification"
-          helm upgrade --install notification deploy/helm/notification \
-            -n ${{ env.NAMESPACE }} \
-            -f deploy/helm/notification/values-production.yaml \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/notification \
-            --set image.tag=${{ github.sha }} \
-            --wait --timeout 5m \
-            --atomic
-          echo "::endgroup::"
-
-      - name: Deploy Recurring Task
-        run: |
-          echo "::group::Helm deploy recurring-task"
-          helm upgrade --install recurring-task deploy/helm/recurring-task \
-            -n ${{ env.NAMESPACE }} \
-            -f deploy/helm/recurring-task/values-production.yaml \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/recurring-task \
-            --set image.tag=${{ github.sha }} \
-            --wait --timeout 5m \
-            --atomic
-          echo "::endgroup::"
-
-      - name: Deploy Audit
-        run: |
-          echo "::group::Helm deploy audit"
-          helm upgrade --install audit deploy/helm/audit \
-            -n ${{ env.NAMESPACE }} \
-            -f deploy/helm/audit/values-production.yaml \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/audit \
-            --set image.tag=${{ github.sha }} \
-            --wait --timeout 5m \
-            --atomic
-          echo "::endgroup::"
-
-      - name: Deploy Frontend
-        run: |
-          echo "::group::Helm deploy frontend"
-          helm upgrade --install frontend deploy/helm/frontend \
-            -n ${{ env.NAMESPACE }} \
-            -f deploy/helm/frontend/values-production.yaml \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend \
-            --set image.tag=${{ github.sha }} \
-            --wait --timeout 5m \
-            --atomic
-          echo "::endgroup::"
-
-      # --- Post-deploy verification ---
-      - name: Verify deployment
-        run: |
-          echo "=== Pod Status ==="
-          kubectl get pods -n ${{ env.NAMESPACE }} -o wide
-          echo ""
-          echo "=== Service Endpoints ==="
-          kubectl get svc -n ${{ env.NAMESPACE }}
-          echo ""
-          echo "=== Deployment Rollout Status ==="
-          for svc in backend notification recurring-task audit frontend; do
-            kubectl rollout status deployment/${svc}-${svc} -n ${{ env.NAMESPACE }} --timeout=60s || true
-          done
-
-      - name: Log deployment summary
-        run: |
-          echo "::notice::Production deployment complete — commit ${{ github.sha }}"
-          echo "::notice::Namespace: ${{ env.NAMESPACE }}"
-          echo "::notice::Images tagged: ${{ github.sha }} + latest"

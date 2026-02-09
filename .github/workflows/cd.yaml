@@ -1,5 +1,5 @@
 # [Task]: T085 — GitHub Actions CD workflow
-name: CD — Build, Push & Deploy
+name: CD — Build & Push
 
 on:
   push:
@@ -37,70 +37,3 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.sha }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
-
-  deploy:
-    name: Deploy to Cloud Cluster
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure kubectl
-        uses: azure/k8s-set-context@v4
-        with:
-          kubeconfig: ${{ secrets.KUBE_CONFIG }}
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-
-      - name: Apply Dapr components
-        run: kubectl apply -f deploy/dapr/ -n todo-chatbot
-
-      - name: Deploy Backend
-        run: |
-          helm upgrade --install backend deploy/helm/backend \
-            -n todo-chatbot \
-            -f deploy/helm/backend/values-cloud.yaml \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend \
-            --set image.tag=${{ github.sha }} \
-            --wait --timeout 5m
-
-      - name: Deploy Notification
-        run: |
-          helm upgrade --install notification deploy/helm/notification \
-            -n todo-chatbot \
-            -f deploy/helm/notification/values-cloud.yaml \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/notification \
-            --set image.tag=${{ github.sha }} \
-            --wait --timeout 5m
-
-      - name: Deploy Recurring Task
-        run: |
-          helm upgrade --install recurring-task deploy/helm/recurring-task \
-            -n todo-chatbot \
-            -f deploy/helm/recurring-task/values-cloud.yaml \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/recurring-task \
-            --set image.tag=${{ github.sha }} \
-            --wait --timeout 5m
-
-      - name: Deploy Audit
-        run: |
-          helm upgrade --install audit deploy/helm/audit \
-            -n todo-chatbot \
-            -f deploy/helm/audit/values-cloud.yaml \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/audit \
-            --set image.tag=${{ github.sha }} \
-            --wait --timeout 5m
-
-      - name: Deploy Frontend
-        run: |
-          helm upgrade --install frontend deploy/helm/frontend \
-            -n todo-chatbot \
-            -f deploy/helm/frontend/values-cloud.yaml \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend \
-            --set image.tag=${{ github.sha }} \
-            --wait --timeout 5m
-
-      - name: Verify deployment
-        run: kubectl get pods -n todo-chatbot
