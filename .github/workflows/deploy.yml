@@ -80,9 +80,12 @@ jobs:
           echo "::notice::Pushed ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.sha }}"
 
   # ─── Stage 2: Deploy to Kubernetes Cluster (sequential) ─────────────
+  # Skipped automatically if KUBE_CONFIG secret is not configured.
+  # Build & Push (Stage 1) still runs and pushes images to GHCR.
   deploy:
     name: Deploy to Production
     needs: build-and-push
+    if: ${{ secrets.KUBE_CONFIG != '' }}
     runs-on: ubuntu-latest
     environment: production    # Requires GitHub "production" environment
     steps:
