@@ -7,11 +7,17 @@ structured logging configuration.
 
 import json
 import logging
+import os
 import sys
 from typing import Any, Optional
 
 import structlog
-from dapr.clients import DaprClient
+
+# Standalone mode: skip Dapr imports when deploying to HF Spaces / non-K8s
+STANDALONE_MODE = os.environ.get("STANDALONE_MODE", "").lower() in ("1", "true")
+
+if not STANDALONE_MODE:
+    from dapr.clients import DaprClient
 
 # ── Constants ──────────────────────────────────────────────────
 DAPR_STORE_NAME = "statestore"

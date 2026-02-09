@@ -5,30 +5,47 @@ from fastapi import APIRouter, HTTPException, Header, Query
 from pydantic import BaseModel
 from typing import Optional
 
+from src.config import STANDALONE_MODE
 from src.models.task import Task, TaskCreate, TaskUpdate
-from src.services.reminder_scheduler import ReminderScheduler
 from src.services.task_service import TaskService
+
+if STANDALONE_MODE:
+    from src.standalone import (
+        MemoryEventPublisher,
+        MemoryReminderScheduler,
+        MemoryStateStore,
+    )
+else:
+    from src.services.reminder_scheduler import ReminderScheduler
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
 # Service instances (overridable via dependency injection in tests)
 _service: Optional[TaskService] = None
-_scheduler: Optional[ReminderScheduler] = None
+_scheduler = None
 
 
 def get_service() -> TaskService:
     """Get or create the TaskService singleton."""
     global _service
     if _service is None:
-        _service = TaskService()
+        if STANDALONE_MODE:
+            store = MemoryStateStore()
+            publisher = MemoryEventPublisher()
+            _service = TaskService(state_store=store, publisher=publisher)
+        else:
+            _service = TaskService()
     return _service
 
 
-def get_scheduler() -> ReminderScheduler:
+def get_scheduler():
     """Get or create the ReminderScheduler singleton."""
     global _scheduler
     if _scheduler is None:
-        _scheduler = ReminderScheduler()
+        if STANDALONE_MODE:
+            _scheduler = MemoryReminderScheduler()
+        else:
+            _scheduler = ReminderScheduler()
     return _scheduler
 
 

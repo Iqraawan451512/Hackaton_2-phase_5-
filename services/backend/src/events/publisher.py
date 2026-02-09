@@ -4,9 +4,10 @@
 import json
 from typing import Any
 
-from dapr.clients import DaprClient
+from src.config import DAPR_PUBSUB_NAME, STANDALONE_MODE, get_logger
 
-from src.config import DAPR_PUBSUB_NAME, get_logger
+if not STANDALONE_MODE:
+    from dapr.clients import DaprClient
 from src.events.task_event import TaskEvent
 
 logger = get_logger("event_publisher")

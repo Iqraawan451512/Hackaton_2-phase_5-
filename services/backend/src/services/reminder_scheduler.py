@@ -4,9 +4,10 @@
 import json
 from datetime import datetime, timedelta, timezone
 
-from dapr.clients import DaprClient
+from src.config import STANDALONE_MODE, StateStore, get_logger
 
-from src.config import StateStore, get_logger
+if not STANDALONE_MODE:
+    from dapr.clients import DaprClient
 from src.models.reminder import Reminder, ReminderStatus
 
 logger = get_logger("reminder_scheduler")
